@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>tb3_rmf_sh_gz</name>
+  <version>0.1.0</version>
+  <description>Gazebo simulation launch for the sh_delivery building</description>
+  <maintainer email="you@example.com">sh</maintainer>
+  <license>Apache License 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>rmf_demos_assets</exec_depend>
+  <exec_depend>rmf_building_sim_gz_plugins</exec_depend>
+  <exec_depend>rmf_robot_sim_gz_plugins</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>tb3_rmf_sh_demos</exec_depend>
+  <exec_depend>tb3_rmf_sh_maps</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

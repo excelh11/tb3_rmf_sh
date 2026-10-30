@@ -1,0 +1,28 @@
+<?xml version='1.0' ?>
+
+<!-- RMF core + fleet adapter for the sh_delivery building (L1, L2, 1 lift, 2 tinyRobots) -->
+<launch>
+  <arg name="use_sim_time" default="false"/>
+  <arg name="headless" default="false"/>
+  <arg name="server_uri" default="" description="rmf-web api-server URI (empty = not used)"/>
+
+  <!-- Common launch from rmf_demos: traffic schedule, building map server,
+       door/lift supervisors, task dispatcher, RViz -->
+  <include file="$(find-pkg-share rmf_demos)/common.launch.xml">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="config_file" value="$(find-pkg-share tb3_rmf_sh_maps)/sh_delivery/sh_delivery.building.yaml"/>
+    <arg name="headless" value="$(var headless)"/>
+    <arg name="server_uri" value="$(var server_uri)"/>
+  </include>
+
+  <!-- sh_tinyRobot fleet adapter (tinyRobot1, tinyRobot2) -->
+  <group>
+    <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share tb3_rmf_sh_maps)/maps/sh_delivery/nav_graphs/0.yaml" />
+      <arg name="config_file" value="$(find-pkg-share tb3_rmf_sh_demos)/config/sh_delivery/sh_tinyRobot_config.yaml"/>
+      <arg name="server_uri" value="$(var server_uri)"/>
+    </include>
+  </group>
+
+</launch>

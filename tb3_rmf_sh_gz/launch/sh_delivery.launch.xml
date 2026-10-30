@@ -1,0 +1,26 @@
+<?xml version='1.0' ?>
+
+<!-- Gazebo + Open-RMF for the sh_delivery building (L1/L2, 1 lift, 2 tinyRobots).
+       ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml
+     with rmf-web:
+       ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:8000/_internal" -->
+<launch>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gazebo_version" default="8"/>
+  <arg name="headless" default="false" description="true: no RViz, Gazebo without GUI"/>
+  <arg name="server_uri" default="" description="rmf-web api-server URI (empty = not used)"/>
+
+  <!-- RMF side: schedule, building map, lift supervisor, dispatcher, fleet adapter -->
+  <include file="$(find-pkg-share tb3_rmf_sh_demos)/launch/sh_delivery.launch.xml">
+    <arg name="use_sim_time" value="$(var use_sim_time)"/>
+    <arg name="headless" value="$(var headless)"/>
+    <arg name="server_uri" value="$(var server_uri)"/>
+  </include>
+
+  <!-- Simulation side: Gazebo world + /clock bridge -->
+  <include file="$(find-pkg-share tb3_rmf_sh_gz)/launch/sh_simulation.launch.xml">
+    <arg name="map_name" value="sh_delivery"/>
+    <arg name="gazebo_version" value="$(var gazebo_version)"/>
+    <arg name="headless" value="$(var headless)"/>
+  </include>
+</launch>
