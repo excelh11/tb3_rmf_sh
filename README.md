@@ -5,14 +5,15 @@ Ubuntu 24.04 + ROS 2 Jazzy + Open-RMF에서 돌아가는 **배달 실습용 가�
 
 | 1층 (L1) | 2층 (L2) |
 |---|---|
-| ![L1](tb3_rmf_sh_maps/maps/sh_delivery/sh_delivery_L1.png) | ![L2](tb3_rmf_sh_maps/maps/sh_delivery/sh_delivery_L2.png) |
+| ![L1](docs/sh_delivery_L1_overview.png) | ![L2](docs/sh_delivery_L2_overview.png) |
 
-- 주황 점 = 이름 있는 지점, 하늘색 선 = 로봇이 다니는 경로(lane), 파란 네모 = 엘리베이터, 회색 격자 1칸 = 1 m
+- 주황 점 = 이름 있는 지점, 하늘색 선 = 로봇이 다니는 경로(lane), 빨간 선 = 문, 파란 네모 = 엘리베이터, 회색 격자 1칸 = 1 m
 
 | 항목 | 값 |
 |---|---|
 | 건물 이름 | `sh_delivery` (24 m × 14 m, 2개 층, 2층 높이 4 m) |
 | 엘리베이터 | `sh_lift` 1대 (2.7 m × 2.7 m, 1층 ↔ 2층) |
+| 문 | 1층 `L1_door_loading`(물류실, 양쪽 미닫이) · 2층 `L2_door_201`(양쪽 여닫이) · `L2_door_202`(한쪽 미닫이) · `L2_door_203`(한쪽 여닫이) |
 | 로봇 | `tinyRobot1`, `tinyRobot2` — fleet 이름 `sh_tinyRobot`, 1층 충전실에서 시작 |
 | 물건 싣는 곳 | `sh_pickup` (1층 물류실) — 디스펜서 `sh_dispenser`, `sh_dispenser_2` (각각 콜라 1개) |
 | 배달 받는 곳 | `room_201`, `room_202`, `room_203` (2층) — 받는 장치 `sh_ingestor_201/202/203` |
@@ -26,6 +27,7 @@ Ubuntu 24.04 + ROS 2 Jazzy + Open-RMF에서 돌아가는 **배달 실습용 가�
 tb3_rmf_sh/
 ├── LICENSE                    Apache License 2.0
 ├── README.md
+├── docs/                      README용 평면 그림 (지점 · 경로 · 문 표시)
 ├── tb3_rmf_sh_maps/           건물 지도 (빌드할 때 Gazebo 월드 + RMF 경로망이 생성됨)
 │   └── maps/sh_delivery/
 │       ├── sh_delivery.building.yaml   벽 · 층 · 엘리베이터 · 경로 · 로봇 위치
@@ -77,7 +79,7 @@ git clone https://github.com/open-rmf/rmf_demos.git -b jazzy
 
 ```bash
 cd ~/rmf_ws/src
-git clone https://github.com/<내 GitHub 아이디>/tb3_rmf_sh.git
+git clone https://github.com/excelh11/tb3_rmf_sh.git
 cd ~/rmf_ws
 rosdep install --from-paths src --ignore-src -ry
 colcon build --symlink-install --packages-up-to tb3_rmf_sh_gz
@@ -131,7 +133,7 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml
 |---|---|
 | `rmf_traffic_schedule` | 로봇들의 앞으로의 경로를 시간표로 모아 **겹치지 않게** 조정 |
 | `building_map_server` | 건물 지도(층 · 엘리베이터 · 경로)를 다른 노드에 알려줌 |
-| `lift_supervisor` · `door_supervisor` | 엘리베이터 · 문 요청을 정리 |
+| `lift_supervisor` · `door_supervisor` | 엘리베이터 · 문 요청을 정리 (로봇이 문을 지나갈 때 RMF가 문을 열고 닫는다) |
 | `rmf_task_dispatcher` | 작업이 들어오면 **어느 로봇이 할지 입찰**로 정함 |
 | `fleet_manager` · `fleet_adapter` | `sh_tinyRobot` 무리(2대)와 RMF 사이의 통역 |
 | `gz sim` + `parameter_bridge` | Gazebo 시뮬레이션과 시뮬레이션 시계(`/clock`) |
@@ -221,6 +223,7 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:800
 | 엘리베이터 안 지점에는 `lift_cabin: sh_lift` | 이 지점을 통해 층과 층이 이어진다 |
 | 싣는 곳에 `pickup_dispenser`, 내리는 곳에 `dropoff_ingestor` | 배달 작업의 `-ph` · `-dh` 이름과 같은 장치 모델이 그 근처(1 m 안)에 있어야 한다 |
 | 지점 이름은 건물 전체에서 겹치지 않게 | 작업 명령이 이름으로 장소를 찾는다 |
+| 문은 벽의 빈 곳 양 끝 점을 잇고, 경로(lane)가 그 문을 **가로지르게** 그린다 | 빌드할 때 그 경로에 `door_name`이 붙고(`nav_graphs/0.yaml`), RMF는 로봇이 그 경로를 지나기 전에 문을 연다 |
 
 ---
 
@@ -254,8 +257,10 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:800
 | 항목 | 방법 | 결과 |
 |---|---|---|
 | 지도 → 월드 · 경로망 생성 | Open-RMF `rmf_building_map_tools`(jazzy 브랜치 소스)의 `building_map_generator gazebo` / `nav` 실행 | `sh_delivery.world`, `nav_graphs/0.yaml` 생성 ✅ |
-| 층 연결 | 생성된 `0.yaml`에서 두 충전소부터 경로를 따라가며 확인 (엘리베이터 지점으로 L1↔L2 연결) | 22개 지점 전부 도달 가능 ✅, 지점 이름 중복 없음 ✅ |
-| 월드 내용 | 생성된 `.world` 확인 | 로봇 2대(L1 충전소), 엘리베이터 `sh_lift`(문은 L1 · L2 모두 복도 쪽), 디스펜서 2개 + 콜라 2개, 받는 장치 3개(L2) ✅ |
+| 층 연결 | 생성된 `0.yaml`에서 두 충전소부터 경로를 따라가며 확인 (엘리베이터 지점으로 L1↔L2 연결) | 18개 지점 전부 도달 가능 ✅, 지점 이름 중복 없음 ✅ |
+| 문 | 생성된 `0.yaml`의 문 4개와 경로 확인 | `sh_pickup`, `room_201/202/203`으로 가는 경로에 각각 해당 `door_name`이 붙음 ✅ |
+| traffic-editor | Open-RMF `rmf_traffic_editor`(jazzy 소스)로 열기 · 저장 | 층 · 벽 · 문 · 엘리베이터 · 지점 · 경로가 그대로 보이고, 편집기로 저장한 파일로 만든 월드 · 경로망이 저장 전과 같음 ✅ |
+| 월드 내용 | 생성된 `.world` 확인, Gazebo(Harmonic)로 열어 보기 | 로봇 2대(L1 충전소), 엘리베이터 `sh_lift`(문은 L1 · L2 모두 복도 쪽), 문 4개, 디스펜서 2개 + 콜라 2개, 받는 장치 3개(L2) 배치 ✅. 단, 작성 환경은 Gazebo Fuel에 접속할 수 없어 디스펜서·콜라·받는 장치는 같은 이름의 대체 모델로 열었고, RMF 플러그인(로봇 구동·문·엘리베이터)은 없이 모양만 확인 |
 | 빌드 | `colcon build --packages-up-to tb3_rmf_sh_gz` (지도 도구는 같은 소스로 대체) | 3개 패키지 빌드, launch가 가리키는 설치 경로의 파일이 모두 존재 ✅ |
 | launch 파일 문법 | ROS 2 launch XML 파서로 읽기, `--show-args` | 통과 ✅ |
 | **Gazebo · RMF 실제 실행** | — | **작성 환경에서 Open-RMF 전체를 설치할 수 없어 미실행.** Open-RMF가 설치된 PC에서 4장 순서로 확인한다 |
