@@ -77,7 +77,7 @@ git clone https://github.com/open-rmf/rmf_demos.git -b jazzy
 
 ```bash
 cd ~/rmf_ws/src
-git clone https://github.com/excelh11/tb3_rmf_sh.git
+git clone https://github.com/<내 GitHub 아이디>/tb3_rmf_sh.git
 cd ~/rmf_ws
 rosdep install --from-paths src --ignore-src -ry
 colcon build --symlink-install --packages-up-to tb3_rmf_sh_gz
