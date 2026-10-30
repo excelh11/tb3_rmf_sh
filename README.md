@@ -259,4 +259,3 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:800
 | 빌드 | `colcon build --packages-up-to tb3_rmf_sh_gz` (지도 도구는 같은 소스로 대체) | 3개 패키지 빌드, launch가 가리키는 설치 경로의 파일이 모두 존재 ✅ |
 | launch 파일 문법 | ROS 2 launch XML 파서로 읽기, `--show-args` | 통과 ✅ |
 | **Gazebo · RMF 실제 실행** | — | **작성 환경에서 Open-RMF 전체를 설치할 수 없어 미실행.** Open-RMF가 설치된 PC에서 4장 순서로 확인한다 |
-# tb3_rmf_sh
