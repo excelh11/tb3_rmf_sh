@@ -15,6 +15,7 @@ Ubuntu 24.04 + ROS 2 Jazzy + Open-RMF에서 돌아가는 **배달 실습용 가�
 | 엘리베이터 | `sh_lift` 1대 (2.7 m × 2.7 m, 1층 ↔ 2층) |
 | 문 | 1층 `L1_door_loading`(물류실, 양쪽 미닫이) · 2층 `L2_door_201`(양쪽 여닫이) · `L2_door_202`(한쪽 미닫이) · `L2_door_203`(한쪽 여닫이) |
 | 로봇 | `tinyRobot1`, `tinyRobot2` — fleet 이름 `sh_tinyRobot`, 1층 충전실에서 시작 |
+| 로봇(청소) | `cleanerBotA_1` — fleet 이름 `sh_cleanerBotA`, 1층 다른 충전실에서 시작. 복도 일부(`L1_hall_west`↔`L1_hall_center`)를 `sh_tinyRobot`과 **같이 쓴다** — 둘이 마주치는 모습을 보려고 일부러 겹치게 그렸다 |
 | 물건 싣는 곳 | `sh_pickup` (1층 물류실) — 디스펜서 `sh_dispenser`, `sh_dispenser_2` (각각 콜라 1개) |
 | 배달 받는 곳 | `room_201`, `room_202`, `room_203` (2층) — 받는 장치 `sh_ingestor_201/202/203` |
 | 실행 | `ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml` |
@@ -34,8 +35,10 @@ tb3_rmf_sh/
 │       ├── sh_delivery_L1.png          1층 평면도 (traffic-editor 배경)
 │       └── sh_delivery_L2.png          2층 평면도
 ├── tb3_rmf_sh_demos/          RMF 실행 설정
-│   ├── launch/sh_delivery.launch.xml               RMF 핵심 + fleet adapter
-│   └── config/sh_delivery/sh_tinyRobot_config.yaml 로봇 무리 설정
+│   ├── launch/sh_delivery.launch.xml               RMF 핵심 + fleet adapter 2개
+│   └── config/sh_delivery/
+│       ├── sh_tinyRobot_config.yaml       tinyRobot 무리 설정 (배달·순찰)
+│       └── sh_cleanerBotA_config.yaml     cleanerBotA 무리 설정 (순찰만)
 └── tb3_rmf_sh_gz/             Gazebo 시뮬레이션 실행
     └── launch/
         ├── sh_delivery.launch.xml      ★ 이것 하나로 전부 실행
@@ -63,7 +66,7 @@ Open-RMF 실습 환경을 이미 설치해 `~/rmf_ws`가 빌드되어 있다면 
 sudo apt update && sudo apt install -y ros-jazzy-rmf-dev
 mkdir -p ~/rmf_ws/src
 cd ~/rmf_ws/src
-git clone https://github.com/open-rmf/rmf_demos.git -b jazzy
+git clone https://github.com/open-rmf/rmf_demos.git -b 2.3.0
 ```
 
 **명령어 풀이**
@@ -71,7 +74,7 @@ git clone https://github.com/open-rmf/rmf_demos.git -b jazzy
 - `&&`: 앞 명령이 성공했을 때만 뒤 명령을 실행
 - `apt install -y ros-jazzy-rmf-dev`: Open-RMF 핵심 패키지 묶음(메타패키지) 설치. `-y` = **y**es, 확인 질문에 자동 동의
 - `mkdir -p`: **m**a**k**e **dir**ectory. `-p` = **p**arents, 중간 폴더까지 만들고 이미 있어도 오류 없음
-- `git clone 주소 -b jazzy`: 저장소를 내려받는다. `-b` = **b**ranch. ROS 2 Jazzy용 브랜치를 받는다
+- `git clone 주소 -b 2.3.0`: 저장소를 내려받는다. `-b`는 브랜치 또는 **태그(버전)**. `2.3.0`은 apt로 깐 Jazzy용 Open-RMF와 짝이 맞는 `rmf_demos` 버전이다(`open-rmf/rmf` `jazzy-release` 브랜치의 `rmf.repos`). `jazzy` 브랜치 최신은 apt 도구보다 앞서 있어 맞지 않는 부분이 있다
 
 ---
 
@@ -135,7 +138,7 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml
 | `building_map_server` | 건물 지도(층 · 엘리베이터 · 경로)를 다른 노드에 알려줌 |
 | `lift_supervisor` · `door_supervisor` | 엘리베이터 · 문 요청을 정리 (로봇이 문을 지나갈 때 RMF가 문을 열고 닫는다) |
 | `rmf_task_dispatcher` | 작업이 들어오면 **어느 로봇이 할지 입찰**로 정함 |
-| `fleet_manager` · `fleet_adapter` | `sh_tinyRobot` 무리(2대)와 RMF 사이의 통역 |
+| `fleet_manager` · `fleet_adapter` (2개) | `sh_tinyRobot` 무리(2대), `sh_cleanerBotA` 무리(1대)와 RMF 사이의 통역 — 무리마다 하나씩 |
 | `gz sim` + `parameter_bridge` | Gazebo 시뮬레이션과 시뮬레이션 시계(`/clock`) |
 
 ### 4-2. 배달 시키기 — 터미널 ②
@@ -185,6 +188,10 @@ ros2 run rmf_demos_tasks dispatch_go_to_place -p L2_hall_center --use_sim_time
 | L1 | `L1_hall_west`, `L1_hall_center`, `L1_lift_lobby` | 복도 · 엘리베이터 앞 |
 | L2 | `room_201`, `room_202`, `room_203` | 배달 받는 곳 (`sh_ingestor_201/202/203`) |
 | L2 | `L2_hall_west`, `L2_hall_center`, `L2_lift_lobby` | 복도 · 엘리베이터 앞 |
+| L1 | `cleanerBotA_charger` | `cleanerBotA_1`의 충전 · 시작 위치 |
+| L1 | `clean_west_point` | `cleanerBotA_1`의 순찰 지점 — 가려면 `L1_hall_west`↔`L1_hall_center`를 지나야 한다 |
+
+**교착(Deadlock) 실습**: `sh_tinyRobot`과 `sh_cleanerBotA`는 로봇 무리가 달라 서로의 경로(`graph_idx` 0과 1)가 따로 그려져 있지만, `L1_hall_west`↔`L1_hall_center` 구간만은 **두 무리가 같은 점을 쓰도록 일부러 겹쳐 그렸다.** 이 구간에서 두 로봇이 마주치게 만들고 RMF가 어떻게 순서를 정하는지 보는 실습은 별도 문서(12번, "교착을 만들고 화면으로 들여다보자")에서 다룬다.
 
 ### 4-5. rmf-web 대시보드와 함께
 
@@ -247,8 +254,9 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:800
 - 아래 파일은 [open-rmf/rmf_demos](https://github.com/open-rmf/rmf_demos) (Apache License 2.0)의 파일을 바탕으로 이름 · 경로를 바꾼 것이다
   - `tb3_rmf_sh_maps/CMakeLists.txt` ← `rmf_demos_maps/CMakeLists.txt`
   - `tb3_rmf_sh_demos/config/sh_delivery/sh_tinyRobot_config.yaml` ← `rmf_demos/config/office/tinyRobot_config.yaml`
+  - `tb3_rmf_sh_demos/config/sh_delivery/sh_cleanerBotA_config.yaml` ← `rmf_demos/config/hotel/cleanerBotA_config.yaml`
   - `tb3_rmf_sh_gz/launch/sh_simulation.launch.xml` ← `rmf_demos_gz/launch/simulation.launch.xml`
-- 실행 시 쓰는 로봇 모델 · fleet adapter · 작업 명령은 Open-RMF 공식 패키지(`rmf_demos_assets`, `rmf_demos_fleet_adapter`, `rmf_demos_tasks`)다
+- 실행 시 쓰는 로봇 모델(`TinyRobot`, `CleanerBotA`) · fleet adapter · 작업 명령은 Open-RMF 공식 패키지(`rmf_demos_assets`, `rmf_demos_fleet_adapter`, `rmf_demos_tasks`)다
 
 ---
 
@@ -256,8 +264,9 @@ ros2 launch tb3_rmf_sh_gz sh_delivery.launch.xml server_uri:="ws://localhost:800
 
 | 항목 | 방법 | 결과 |
 |---|---|---|
-| 지도 → 월드 · 경로망 생성 | Open-RMF `rmf_building_map_tools`(jazzy 브랜치 소스)의 `building_map_generator gazebo` / `nav` 실행 | `sh_delivery.world`, `nav_graphs/0.yaml` 생성 ✅ |
+| 지도 → 월드 · 경로망 생성 | Open-RMF `rmf_building_map_tools`(jazzy 브랜치 소스 **및** apt `2.3.0`과 짝인 `1.9.1` 소스 둘 다)의 `building_map_generator gazebo` / `nav` 실행 | `sh_delivery.world`, `nav_graphs/0.yaml`(`sh_tinyRobot`), `nav_graphs/1.yaml`(`sh_cleanerBotA`) 생성 ✅. `cleanerBotA_1` 스폰도 두 도구 모두에서 확인 ✅ |
 | 층 연결 | 생성된 `0.yaml`에서 두 충전소부터 경로를 따라가며 확인 (엘리베이터 지점으로 L1↔L2 연결) | 18개 지점 전부 도달 가능 ✅, 지점 이름 중복 없음 ✅ |
+| 교착용 교차 구간 | 생성된 `0.yaml`과 `1.yaml`을 모두 열어 `L1_hall_west`↔`L1_hall_center` 구간이 **양쪽 다** 있는지 확인 | 두 파일 모두에 해당 구간 존재 — 두 무리의 경로가 그 구간에서 겹치는 것을 확인 ✅. `cleanerBotA_charger`에서 그래프를 타고 가면 `L1_hall_west` · `L1_hall_center` · `clean_west_point`까지 전부 도달 ✅ |
 | 문 | 생성된 `0.yaml`의 문 4개와 경로 확인 | `sh_pickup`, `room_201/202/203`으로 가는 경로에 각각 해당 `door_name`이 붙음 ✅ |
 | traffic-editor | Open-RMF `rmf_traffic_editor`(jazzy 소스)로 열기 · 저장 | 층 · 벽 · 문 · 엘리베이터 · 지점 · 경로가 그대로 보이고, 편집기로 저장한 파일로 만든 월드 · 경로망이 저장 전과 같음 ✅ |
 | 월드 내용 | 생성된 `.world` 확인, Gazebo(Harmonic)로 열어 보기 | 로봇 2대(L1 충전소), 엘리베이터 `sh_lift`(문은 L1 · L2 모두 복도 쪽), 문 4개, 디스펜서 2개 + 콜라 2개, 받는 장치 3개(L2) 배치 ✅. 단, 작성 환경은 Gazebo Fuel에 접속할 수 없어 디스펜서·콜라·받는 장치는 같은 이름의 대체 모델로 열었고, RMF 플러그인(로봇 구동·문·엘리베이터)은 없이 모양만 확인 |

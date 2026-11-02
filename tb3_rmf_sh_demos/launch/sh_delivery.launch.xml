@@ -15,12 +15,23 @@
     <arg name="server_uri" value="$(var server_uri)"/>
   </include>
 
-  <!-- sh_tinyRobot fleet adapter (tinyRobot1, tinyRobot2) -->
+  <!-- sh_tinyRobot fleet adapter (tinyRobot1, tinyRobot2) — graph_idx 0 -->
   <group>
     <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
       <arg name="use_sim_time" value="$(var use_sim_time)"/>
       <arg name="nav_graph_file" value="$(find-pkg-share tb3_rmf_sh_maps)/maps/sh_delivery/nav_graphs/0.yaml" />
       <arg name="config_file" value="$(find-pkg-share tb3_rmf_sh_demos)/config/sh_delivery/sh_tinyRobot_config.yaml"/>
+      <arg name="server_uri" value="$(var server_uri)"/>
+    </include>
+  </group>
+
+  <!-- sh_cleanerBotA fleet adapter (cleanerBotA_1) — graph_idx 1, shares the
+       L1_hall_west <-> L1_hall_center corridor with sh_tinyRobot's graph_idx 0 -->
+  <group>
+    <include file="$(find-pkg-share rmf_demos_fleet_adapter)/launch/fleet_adapter.launch.xml">
+      <arg name="use_sim_time" value="$(var use_sim_time)"/>
+      <arg name="nav_graph_file" value="$(find-pkg-share tb3_rmf_sh_maps)/maps/sh_delivery/nav_graphs/1.yaml" />
+      <arg name="config_file" value="$(find-pkg-share tb3_rmf_sh_demos)/config/sh_delivery/sh_cleanerBotA_config.yaml"/>
       <arg name="server_uri" value="$(var server_uri)"/>
     </include>
   </group>
